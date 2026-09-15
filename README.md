@@ -20,6 +20,7 @@ Countersig is a Mermail Agent Skill that stops payout-address fraud before an AI
 | `lib/countersig.ts` | Browser port of the skill's verify rules for Solana and Base |
 | `skill/scripts/` | Exact copy of the skill script from the PR branch. CI fails if it drifts |
 | `tests/gate-check.mjs` | 21 offline cases for the payout gate |
+| `tests/attack-check.mjs` | 11 red-team cases against a local mock RPC: history flooding, forged and edited receipts, Base replay without chain id |
 
 ## Trust ladder
 
@@ -42,11 +43,24 @@ Returns `ALLOW_WITH_USER_APPROVAL`, `HOLD` or `BLOCK`. The policy lives in code,
 - A lost old wallet needs a second independent channel and a 72 hour hold.
 - `MISMATCH` and `LOOKALIKE` are hard stops.
 
+## Red-team results
+
+These attacks were found by trying to break Countersig, then fixed. The previous version failed 8 of the 11 cases, including one real bypass: flooding the prior wallet with unrelated transactions hid a conflicting endorsement, and verify returned `VERIFIED_CONTINUITY`.
+
+| Attack | Result now |
+| --- | --- |
+| Flood the prior wallet to hide a conflicting endorsement | `MISMATCH` |
+| Flood beyond the scan budget | `PENDING`, never verified |
+| Email a forged `[Countersig]` receipt naming the attacker wallet | `untrusted`, cannot become the prior wallet |
+| Edit a stored receipt to swap the wallet | sha256 mismatch, `untrusted` |
+| Anchor memo signed by a wallet other than ours | `untrusted` |
+| Legacy Base transaction without chain id | rejected |
+
 ## Verify it yourself
 
 ```bash
 npm ci
-npm run test:gate
+npm test
 npm run build
 ```
 

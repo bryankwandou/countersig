@@ -185,7 +185,8 @@ export async function findEvmProof({ cluster, rpcUrl, address, expected, txHash,
     memo: decodeMemo(tx.input),
     signedByAddress: tx.from.toLowerCase() === address.toLowerCase(),
     selfSend: tx.to?.toLowerCase() === tx.from.toLowerCase(),
-    chainIdMatches: tx.chainId == null || Number(tx.chainId) === chain.chainId,
+    // Legacy transactions without a chain id can be replayed across chains, so they never count as proof.
+    chainIdMatches: tx.chainId != null && Number(tx.chainId) === chain.chainId,
     inWindow: blockTime >= notBefore - clockSkew && blockTime <= notAfter,
     succeeded: receipt.status === "0x1",
   };

@@ -23,6 +23,8 @@ jobs:
           done
       - name: Payout gate policy
         run: npm run test:gate
+      - name: Red-team cases (flooding, forged receipts, Base replay)
+        run: npm run test:attack
       - name: Lint
         run: npm run lint
       - name: Build
