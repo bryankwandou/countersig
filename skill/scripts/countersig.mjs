@@ -17,8 +17,11 @@
 // Exit codes: 0 verified or command succeeded, 2 pending / not proven, 3 hard stop, 1 usage or network error.
 
 import { createHash, createPrivateKey, createPublicKey, generateKeyPairSync, randomBytes, sign as edSign } from "node:crypto";
+import { realpathSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 import { EVM_CHAINS, evmExplorer, findEvmProof, isEvmAddress, isEvmChain, loadEvmKey, newEvmKey, sendEvmMemo } from "./evm.mjs";
 
 export const VERSION = "v1";
@@ -703,7 +706,15 @@ async function main() {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]?.replace(/\\/g, "/").replace(/^(?=[A-Za-z]:)/, "/")}` || process.argv[1]?.endsWith("countersig.mjs")) {
+// Run the CLI only when this file is the entry point, not when a test or another script imports it.
+const isEntry = () => {
+  try {
+    return Boolean(process.argv[1]) && realpathSync(path.resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+};
+if (isEntry()) {
   main().catch((error) => {
     process.stdout.write(`${JSON.stringify({ type: "countersig.error", error: error.message }, null, 2)}\n`);
     process.exitCode = 1;
