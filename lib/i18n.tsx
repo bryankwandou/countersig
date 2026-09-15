@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
+import { createPref } from "./pref";
 
 export const LOCALES = { en: "English", id: "Bahasa Indonesia", es: "Español", vi: "Tiếng Việt", zh: "中文" } as const;
 export type Locale = keyof typeof LOCALES;
@@ -741,24 +742,14 @@ const DICTS: Record<Locale, Dict> = { en, id, es, vi, zh };
 type Ctx = { locale: Locale; t: Dict; setLocale: (l: Locale) => void };
 const I18n = createContext<Ctx>({ locale: "en", t: en, setLocale: () => {} });
 
+const localePref = createPref<Locale>("cs-locale", () => "en", (v): v is Locale => v in DICTS);
+
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("en");
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("cs-locale") as Locale | null;
-      if (saved && saved in DICTS) setLocaleState(saved);
-    } catch {}
-  }, []);
+  const locale = localePref.use() ?? "en";
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
-  const setLocale = (l: Locale) => {
-    setLocaleState(l);
-    try {
-      localStorage.setItem("cs-locale", l);
-    } catch {}
-  };
-  return <I18n.Provider value={{ locale, t: DICTS[locale], setLocale }}>{children}</I18n.Provider>;
+  return <I18n.Provider value={{ locale, t: DICTS[locale], setLocale: localePref.set }}>{children}</I18n.Provider>;
 }
 
 export const useI18n = () => useContext(I18n);
