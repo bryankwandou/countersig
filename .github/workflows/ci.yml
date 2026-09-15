@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Skill script matches the Mermail PR branch
+        run: |
+          base=https://raw.githubusercontent.com/bryankwandou/mermail-skills/feat/mermail-countersig/skills/mermail-countersig/scripts
+          for f in countersig.mjs evm.mjs; do
+            curl -fsSL "$base/$f" | diff -q - "skill/scripts/$f"
+          done
+      - name: Payout gate policy
+        run: npm run test:gate
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build

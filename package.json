@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:gate": "node tests/gate-check.mjs"
   },
   "dependencies": {
     "@solana/web3.js": "^1.99.0",
