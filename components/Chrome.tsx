@@ -1,32 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { createPref } from "@/lib/pref";
 import { Mark } from "./Mark";
 import { LOCALES, useI18n, type Locale } from "@/lib/i18n";
 
 export const REPO = "https://github.com/Nudgen-Marketing/mermail-skills";
 
+type Theme = "light" | "dark";
+const themePref = createPref<Theme>(
+  "cs-theme",
+  () => (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
+  (v): v is Theme => v === "light" || v === "dark",
+);
+
 export function Header() {
   const { t, locale, setLocale } = useI18n();
-  const [dark, setDark] = useState(false);
+  const theme = themePref.use();
+  const dark = theme === "dark";
   useEffect(() => {
-    let saved: string | null = null;
-    try {
-      saved = localStorage.getItem("cs-theme");
-    } catch {}
-    const d = saved ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
-    setDark(d);
-    document.documentElement.dataset.theme = d ? "dark" : "light";
-  }, []);
-  const toggle = () => {
-    const d = !dark;
-    setDark(d);
-    document.documentElement.dataset.theme = d ? "dark" : "light";
-    try {
-      localStorage.setItem("cs-theme", d ? "dark" : "light");
-    } catch {}
-  };
+    if (theme) document.documentElement.dataset.theme = theme;
+  }, [theme]);
+  const toggle = () => themePref.set(dark ? "light" : "dark");
   return (
     <header className="sticky top-0 z-40 border-b border-rule/70 bg-paper/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-5 sm:px-8">

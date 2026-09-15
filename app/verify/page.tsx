@@ -13,13 +13,28 @@ const toLocal = (unix: number) => {
 };
 const fromLocal = (s: string) => Math.floor(new Date(s).getTime() / 1000);
 
+function formFromUrl(sp: URLSearchParams | ReturnType<typeof useSearchParams>): Form {
+  const now = Math.floor(Date.now() / 1000);
+  const e = Number(sp.get("e")) || now + 72 * 3600;
+  return {
+    claimed: sp.get("a") ?? "",
+    prior: sp.get("p") ?? "",
+    nonce: sp.get("n") ?? "",
+    issued: toLocal(Number(sp.get("i")) || (sp.get("e") ? e - 72 * 3600 : now - 3600)),
+    expires: toLocal(e),
+    cluster: (sp.get("c") as Cluster) || "devnet",
+    known: (sp.get("k") ?? "").split(",").filter(Boolean).join("\n"),
+    controlTx: sp.get("ct") ?? "",
+    rotationTx: sp.get("rt") ?? "",
+  };
+}
+
 type Form = { claimed: string; prior: string; nonce: string; issued: string; expires: string; cluster: Cluster; known: string; controlTx: string; rotationTx: string };
 
 function VerifyInner() {
   const { t } = useI18n();
   const sp = useSearchParams();
-  const now = Math.floor(Date.now() / 1000);
-  const [f, setF] = useState<Form>({ claimed: "", prior: "", nonce: "", issued: toLocal(now - 3600), expires: toLocal(now + 72 * 3600), cluster: "devnet", known: "", controlTx: "", rotationTx: "" });
+  const [f, setF] = useState<Form>(() => formFromUrl(sp));
   const [json, setJson] = useState("");
   const [state, setState] = useState<{ status: "idle" | "loading" | "done" | "error"; v?: Verdict; msg?: string }>({ status: "idle" });
   const auto = useRef(false);
@@ -45,27 +60,15 @@ function VerifyInner() {
   };
 
   useEffect(() => {
-    if (auto.current) return;
-    const a = sp.get("a");
-    const n = sp.get("n");
-    if (!a || !n) return;
-    auto.current = true;
-    const e = Number(sp.get("e")) || now + 72 * 3600;
-    const next: Form = {
-      claimed: a,
-      prior: sp.get("p") ?? "",
-      nonce: n,
-      issued: toLocal(Number(sp.get("i")) || e - 72 * 3600),
-      expires: toLocal(e),
-      cluster: (sp.get("c") as Cluster) || "devnet",
-      known: (sp.get("k") ?? "").split(",").join("\n"),
-      controlTx: sp.get("ct") ?? "",
-      rotationTx: sp.get("rt") ?? "",
-    };
-    setF(next);
-    run(next);
+    if (auto.current || !f.claimed || !f.nonce) return;
+    const pending = setTimeout(() => {
+      auto.current = true;
+      run(f);
+    }, 0);
+    return () => clearTimeout(pending);
+    // Runs once for a shared link; later edits wait for the Verify button.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sp]);
+  }, []);
 
   const loadJson = (text: string) => {
     setJson(text);

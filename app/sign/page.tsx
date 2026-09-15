@@ -46,7 +46,8 @@ function SignInner() {
   const cluster = (sp.get("c") as SolanaCluster) || "devnet";
   const expires = Number(sp.get("e")) || 0;
   const valid = /^[0-9A-Z]{16}$/.test(nonce) && isSolanaAddress(claimed) && (!prior || isSolanaAddress(prior)) && cluster in RPC;
-  const expired = expires > 0 && Date.now() / 1000 > expires;
+  const [openedAt] = useState(() => Date.now() / 1000);
+  const expired = expires > 0 && openedAt > expires;
 
   const roles = useMemo(
     () => [
