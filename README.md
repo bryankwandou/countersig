@@ -1,6 +1,6 @@
 # Countersig
 
-[![ci](https://github.com/bryankwandou/countersig/actions/workflows/ci.yml/badge.svg)](https://github.com/bryankwandou/countersig/actions/workflows/ci.yml) [![live-devnet](https://github.com/bryankwandou/countersig/actions/workflows/live-devnet.yml/badge.svg)](https://github.com/bryankwandou/countersig/actions/workflows/live-devnet.yml)
+[![ci](https://github.com/bryankwandou/countersig/actions/workflows/ci.yml/badge.svg)](https://github.com/bryankwandou/countersig/actions/workflows/ci.yml) [![live-mermail](https://github.com/bryankwandou/countersig/actions/workflows/live-mermail.yml/badge.svg)](https://github.com/bryankwandou/countersig/actions/workflows/live-mermail.yml) [![live-devnet](https://github.com/bryankwandou/countersig/actions/workflows/live-devnet.yml/badge.svg)](https://github.com/bryankwandou/countersig/actions/workflows/live-devnet.yml)
 
 An email can ask. The wallet has to sign.
 
