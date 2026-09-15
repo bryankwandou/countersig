@@ -20,6 +20,8 @@ const cases = [
   ["missing amount blocks", { verdict: v("VERIFIED_CONTINUITY"), amountUsd: "" }, "BLOCK"],
   ["first contact small after cool-off", { verdict: channel(), amountUsd: 900 }, "ALLOW_WITH_USER_APPROVAL"],
   ["first contact inside cool-off holds", { verdict: channel({ coolOffUntil: iso(5) }), amountUsd: 900 }, "HOLD"],
+  ["call-back replaces the first-contact cool-off", { verdict: channel({ coolOffUntil: iso(5) }), amountUsd: 900, callbackConfirmed: true }, "ALLOW_WITH_USER_APPROVAL"],
+  ["call-back does not replace the lost-wallet hold", { verdict: channel({ coolOffUntil: iso(5) }), amountUsd: 500, callbackConfirmed: true, continuityUnavailable: true, secondChannelAt: iso(-10) }, "HOLD"],
   ["first contact large needs call-back", { verdict: channel(), amountUsd: 5000 }, "HOLD"],
   ["first contact large with call-back", { verdict: channel(), amountUsd: 5000, callbackConfirmed: true }, "ALLOW_WITH_USER_APPROVAL"],
   ["split payments are summed", { verdict: channel(), amountUsd: 900, history: [{ to: W, amountUsd: 900, at: iso(-24) }] }, "HOLD"],
