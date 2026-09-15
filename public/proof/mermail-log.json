@@ -1,0 +1,147 @@
+{
+  "mailbox": "nayrbryangamingagent01@mermail.app",
+  "inbound": [
+    {
+      "id": "77e24bf8-c2bd-4466-bc6f-48051ddcd9ce",
+      "subject": "Updated payout wallet for invoice #1182",
+      "sender": "nayrbryan.fans.0@gmail.com",
+      "recipient": "nayrbryangamingagent01@mermail.app",
+      "date": "2026-09-14T01:31:36.785Z",
+      "scan_status": "clean"
+    },
+    {
+      "id": "ab1f5597-382e-42ad-a741-a6d591ac6067",
+      "subject": "Invoice #1181 - Vendor Ltd",
+      "sender": "nayrbryan.fans.0@gmail.com",
+      "recipient": "nayrbryangamingagent01@mermail.app",
+      "date": "2026-09-14T01:31:19.450Z",
+      "scan_status": "clean"
+    },
+    {
+      "id": "8e934366-d6bf-4548-b317-ff89a704e87d",
+      "subject": "Updated payout wallet for invoice #1182",
+      "sender": "nayrbryan.fans.0@gmail.com",
+      "recipient": "nayrbryangamingagent01@mermail.app",
+      "date": "2026-09-14T01:24:54.811Z",
+      "scan_status": "clean"
+    }
+  ],
+  "send_email": {
+    "id": "ea4b46ee-e7e6-42a8-b247-c8452f4e346b",
+    "status": "queued",
+    "undo_until": "2026-09-14T01:39:12.734Z"
+  },
+  "challenge": {
+    "type": "countersig.challenge",
+    "version": "v1",
+    "nonce": "70K4BH8HTH16J1P3",
+    "cluster": "devnet",
+    "claimed": "5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9",
+    "prior": "66ahMx2mUV3a4X2Hyoe6SXv4tBmmCtariKvvyCZ8sv98",
+    "channel": "nayrbryan.fans.0@gmail.com",
+    "counterparty": "Vendor Ltd",
+    "issuedAt": "2026-09-14T01:34:04.658Z",
+    "expiresAt": "2026-09-17T01:34:04.658Z",
+    "memoControl": "countersig:v1:70K4BH8HTH16J1P3",
+    "memoRotate": "countersig:v1:70K4BH8HTH16J1P3:rotate:5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9",
+    "signUrl": "https://countersig.vercel.app/sign?n=70K4BH8HTH16J1P3&a=5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9&c=devnet&i=1789349644&e=1789608844&p=66ahMx2mUV3a4X2Hyoe6SXv4tBmmCtariKvvyCZ8sv98",
+    "email": {
+      "to": "nayrbryan.fans.0@gmail.com",
+      "subject": "Confirm your payout wallet 5xqQ...6qJ9 (code 70K4-BH8H)",
+      "text": "Hi Vendor Ltd,\n\nWe received a request to send future payments to 5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9 on Solana devnet.\nBefore we change anything, we need the wallet itself to confirm it. No funds move, and you only pay the network fee.\n\n1. From the wallet 5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9, send a transaction with this exact memo:\n   countersig:v1:70K4BH8HTH16J1P3\n2. From the wallet we paid before, 66ahMx2mUV3a4X2Hyoe6SXv4tBmmCtariKvvyCZ8sv98, send a second transaction with this exact memo:\n   countersig:v1:70K4BH8HTH16J1P3:rotate:5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9\n\nEasiest route: open https://countersig.vercel.app/sign?n=70K4BH8HTH16J1P3&a=5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9&c=devnet&i=1789349644&e=1789608844&p=66ahMx2mUV3a4X2Hyoe6SXv4tBmmCtariKvvyCZ8sv98 and approve in Phantom, Solflare or Backpack.\nThis code expires at 2026-09-17T01:34:04.658Z. If you did not ask for a change, do not sign anything and reply to let us know.\n\nWe will never ask you for a seed phrase, private key or a test payment.",
+      "html": "<div style=\"font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.55;color:#111\">\n<p>Hi Vendor Ltd,</p>\n<p>We received a request to send future payments to <code>5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9</code> on Solana devnet. Before we change anything, the wallet itself needs to confirm it. No funds move; you only pay the network fee.</p>\n<ol><li>From <code>5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9</code>, send a transaction with the memo <code>countersig:v1:70K4BH8HTH16J1P3</code></li><li>From the wallet we paid before, <code>66ahMx2mUV3a4X2Hyoe6SXv4tBmmCtariKvvyCZ8sv98</code>, send a transaction with the memo <code>countersig:v1:70K4BH8HTH16J1P3:rotate:5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9</code></li></ol>\n<p><a href=\"https://countersig.vercel.app/sign?n=70K4BH8HTH16J1P3&amp;a=5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9&amp;c=devnet&amp;i=1789349644&amp;e=1789608844&amp;p=66ahMx2mUV3a4X2Hyoe6SXv4tBmmCtariKvvyCZ8sv98\">Open the Countersig signer</a> to do this in Phantom, Solflare or Backpack.</p>\n<p>The code expires at 2026-09-17T01:34:04.658Z. If you did not request a change, do not sign and reply to tell us.</p>\n<p style=\"color:#555\">We will never ask for a seed phrase, private key or a test payment.</p></div>"
+    }
+  },
+  "verify_before": "PENDING",
+  "verify_after": {
+    "type": "countersig.verdict",
+    "version": "v1",
+    "cluster": "devnet",
+    "claimed": "5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9",
+    "prior": "66ahMx2mUV3a4X2Hyoe6SXv4tBmmCtariKvvyCZ8sv98",
+    "nonce": "70K4BH8HTH16J1P3",
+    "issuedAt": "2026-09-14T01:34:04.658Z",
+    "expiresAt": "2026-09-17T01:34:04.658Z",
+    "checkedAt": "2026-09-14T01:39:32.000Z",
+    "verdict": "VERIFIED_CONTINUITY",
+    "payable": true,
+    "evidence": {
+      "control": {
+        "signature": "2st8otiRNSYfgcvHbYrAgs5AsR4Pjnp6fUvCyM7ffMCMp7TjdDaeERYtxzkRv35sZj2cnUXT35ebwh5yVB3roLZb",
+        "slot": 498002617,
+        "blockTime": 1789349965,
+        "blockTimeIso": "2026-09-14T01:39:25.000Z",
+        "memo": "countersig:v1:70K4BH8HTH16J1P3",
+        "signedByAddress": true,
+        "succeeded": true,
+        "explorer": "https://explorer.solana.com/tx/2st8otiRNSYfgcvHbYrAgs5AsR4Pjnp6fUvCyM7ffMCMp7TjdDaeERYtxzkRv35sZj2cnUXT35ebwh5yVB3roLZb?cluster=devnet"
+      },
+      "rotation": {
+        "signature": "4QETMqJuENStxQCgcCvN2eVb5UuMcUy6jdXEtfqkBMTgaYhAvYshFWunVqrs6Tob1jaD18tSTiD1azmZ1XwSrcH9",
+        "slot": 498002628,
+        "blockTime": 1789349967,
+        "blockTimeIso": "2026-09-14T01:39:27.000Z",
+        "memo": "countersig:v1:70K4BH8HTH16J1P3:rotate:5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9",
+        "signedByAddress": true,
+        "succeeded": true,
+        "explorer": "https://explorer.solana.com/tx/4QETMqJuENStxQCgcCvN2eVb5UuMcUy6jdXEtfqkBMTgaYhAvYshFWunVqrs6Tob1jaD18tSTiD1azmZ1XwSrcH9?cluster=devnet"
+      }
+    },
+    "trustLadder": {
+      "L1_control": true,
+      "L2_channel": "attested by the agent: nonce sent only to the pre-existing authenticated address",
+      "L3_continuity": true
+    }
+  },
+  "receipt": {
+    "receipt": {
+      "type": "countersig.receipt",
+      "version": "v1",
+      "verdict": "VERIFIED_CONTINUITY",
+      "payable": true,
+      "coolOffUntil": null,
+      "counterparty": "Vendor Ltd",
+      "channel": "nayrbryan.fans.0@gmail.com",
+      "cluster": "devnet",
+      "claimed": "5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9",
+      "prior": "66ahMx2mUV3a4X2Hyoe6SXv4tBmmCtariKvvyCZ8sv98",
+      "nonce": "70K4BH8HTH16J1P3",
+      "issuedAt": "2026-09-14T01:34:04.658Z",
+      "expiresAt": "2026-09-17T01:34:04.658Z",
+      "checkedAt": "2026-09-14T01:39:32.000Z",
+      "evidence": {
+        "control": {
+          "signature": "2st8otiRNSYfgcvHbYrAgs5AsR4Pjnp6fUvCyM7ffMCMp7TjdDaeERYtxzkRv35sZj2cnUXT35ebwh5yVB3roLZb",
+          "slot": 498002617,
+          "blockTime": 1789349965,
+          "blockTimeIso": "2026-09-14T01:39:25.000Z",
+          "memo": "countersig:v1:70K4BH8HTH16J1P3",
+          "signedByAddress": true,
+          "succeeded": true,
+          "explorer": "https://explorer.solana.com/tx/2st8otiRNSYfgcvHbYrAgs5AsR4Pjnp6fUvCyM7ffMCMp7TjdDaeERYtxzkRv35sZj2cnUXT35ebwh5yVB3roLZb?cluster=devnet"
+        },
+        "rotation": {
+          "signature": "4QETMqJuENStxQCgcCvN2eVb5UuMcUy6jdXEtfqkBMTgaYhAvYshFWunVqrs6Tob1jaD18tSTiD1azmZ1XwSrcH9",
+          "slot": 498002628,
+          "blockTime": 1789349967,
+          "blockTimeIso": "2026-09-14T01:39:27.000Z",
+          "memo": "countersig:v1:70K4BH8HTH16J1P3:rotate:5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9",
+          "signedByAddress": true,
+          "succeeded": true,
+          "explorer": "https://explorer.solana.com/tx/4QETMqJuENStxQCgcCvN2eVb5UuMcUy6jdXEtfqkBMTgaYhAvYshFWunVqrs6Tob1jaD18tSTiD1azmZ1XwSrcH9?cluster=devnet"
+        }
+      }
+    },
+    "sha256": "ee90a1bdc3a6e6bfa5487351655d0b355801a7b968593ed58556a1a9c5ecccf9",
+    "subject": "[Countersig] VERIFIED_CONTINUITY Vendor Ltd 5xqQ...6qJ9",
+    "text": "Countersig receipt ee90a1bdc3a6\nVerdict: VERIFIED_CONTINUITY (payable)\nCounterparty: Vendor Ltd via nayrbryan.fans.0@gmail.com\nWallet: 5xqQGYCkXE6mA5Djh4phvzE1xHMRqm4K33uacNg86qJ9 (devnet)\nPrior wallet: 66ahMx2mUV3a4X2Hyoe6SXv4tBmmCtariKvvyCZ8sv98\nControl proof: https://explorer.solana.com/tx/2st8otiRNSYfgcvHbYrAgs5AsR4Pjnp6fUvCyM7ffMCMp7TjdDaeERYtxzkRv35sZj2cnUXT35ebwh5yVB3roLZb?cluster=devnet\nRotation proof: https://explorer.solana.com/tx/4QETMqJuENStxQCgcCvN2eVb5UuMcUy6jdXEtfqkBMTgaYhAvYshFWunVqrs6Tob1jaD18tSTiD1azmZ1XwSrcH9?cluster=devnet\nChecked: 2026-09-14T01:39:32.000Z\nsha256: ee90a1bdc3a6e6bfa5487351655d0b355801a7b968593ed58556a1a9c5ecccf9"
+  },
+  "receipt_draft": {
+    "id": "0f29c9b0-b188-44fc-9454-e84356f2ee8a",
+    "draft_id": "0f29c9b0-b188-44fc-9454-e84356f2ee8a",
+    "status": "draft",
+    "subject": "[Countersig] VERIFIED_CONTINUITY Vendor Ltd 5xqQ...6qJ9",
+    "recipient": "nayrbryangamingagent01@mermail.app",
+    "date": "2026-09-14T01:40:56.774Z"
+  }
+}

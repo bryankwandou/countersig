@@ -3,8 +3,18 @@
 
 export const VERSION = "v1";
 export const MEMO_PROGRAM = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
-export type Cluster = "devnet" | "testnet" | "mainnet-beta";
-export const RPC: Record<Cluster, string> = {
+export type SolanaCluster = "devnet" | "testnet" | "mainnet-beta";
+export type EvmCluster = "base-sepolia" | "base";
+export type Cluster = SolanaCluster | EvmCluster;
+export const EVM_CHAINS: Record<EvmCluster, { chainId: number; rpc: string; explorer: string }> = {
+  "base-sepolia": { chainId: 84532, rpc: "https://sepolia.base.org", explorer: "https://sepolia.basescan.org" },
+  base: { chainId: 8453, rpc: "https://mainnet.base.org", explorer: "https://basescan.org" },
+};
+export const isEvmChain = (c: string): c is EvmCluster => Object.hasOwn(EVM_CHAINS, c);
+export const isEvmAddress = (t: string | null | undefined): t is string => typeof t === "string" && /^0x[0-9a-fA-F]{40}$/.test(t);
+export const isTxHash = (t: string | null | undefined): t is string => typeof t === "string" && /^0x[0-9a-fA-F]{64}$/.test(t);
+const sameAddress = (a: string, b: string) => (isEvmAddress(a) && isEvmAddress(b) ? a.toLowerCase() === b.toLowerCase() : a === b);
+export const RPC: Record<SolanaCluster, string> = {
   devnet: "https://api.devnet.solana.com",
   testnet: "https://api.testnet.solana.com",
   "mainnet-beta": "https://api.mainnet-beta.solana.com",
@@ -51,16 +61,16 @@ export interface Verdict {
 
 const B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 export function b58decode(text: string): Uint8Array {
-  let n = 0n;
+  let n = BigInt(0);
   for (const ch of text) {
     const i = B58.indexOf(ch);
     if (i < 0) throw new Error("invalid base58");
-    n = n * 58n + BigInt(i);
+    n = n * BigInt(58) + BigInt(i);
   }
   const bytes: number[] = [];
-  while (n > 0n) {
-    bytes.unshift(Number(n & 0xffn));
-    n >>= 8n;
+  while (n > BigInt(0)) {
+    bytes.unshift(Number(n & BigInt(255)));
+    n >>= BigInt(8);
   }
   for (const ch of text) {
     if (ch !== "1") break;
@@ -80,15 +90,17 @@ export function isSolanaAddress(text: string | null | undefined): text is string
 export const controlMemo = (nonce: string) => `countersig:${VERSION}:${nonce}`;
 export const rotateMemo = (nonce: string, claimed: string) => `countersig:${VERSION}:${nonce}:rotate:${claimed}`;
 export const explorerTx = (sig: string, cluster: Cluster) =>
-  `https://explorer.solana.com/tx/${sig}${cluster === "mainnet-beta" ? "" : `?cluster=${cluster}`}`;
+  isEvmChain(cluster) ? `${EVM_CHAINS[cluster].explorer}/tx/${sig}` : `https://explorer.solana.com/tx/${sig}${cluster === "mainnet-beta" ? "" : `?cluster=${cluster}`}`;
 export const explorerAddress = (addr: string, cluster: Cluster) =>
-  `https://explorer.solana.com/address/${addr}${cluster === "mainnet-beta" ? "" : `?cluster=${cluster}`}`;
+  isEvmChain(cluster) ? `${EVM_CHAINS[cluster].explorer}/address/${addr}` : `https://explorer.solana.com/address/${addr}${cluster === "mainnet-beta" ? "" : `?cluster=${cluster}`}`;
 export const shortAddress = (a: string, n = 4) => (a.length > n * 2 + 3 ? `${a.slice(0, n)}...${a.slice(-n)}` : a);
 export const formatNonce = (n: string) => n.match(/.{1,4}/g)?.join("-") ?? n;
 export const normalizeNonce = (n: string) => n.replace(/[^0-9A-Za-z]/g, "").toUpperCase();
 
 export function lookalikes(claimed: string, known: string[]) {
-  return known.filter((k) => k && k !== claimed && k.slice(0, 4) === claimed.slice(0, 4) && k.slice(-4) === claimed.slice(-4));
+  const norm = (a: string) => (isEvmAddress(a) ? a.slice(2).toLowerCase() : a);
+  const c = norm(claimed);
+  return known.filter((k) => k && norm(k) !== c && norm(k).slice(0, 4) === c.slice(0, 4) && norm(k).slice(-4) === c.slice(-4));
 }
 
 async function rpc<T>(url: string, method: string, params: unknown[], signal?: AbortSignal): Promise<T> {
@@ -151,6 +163,46 @@ async function findMemoProof(opts: { rpcUrl: string; address: string; expected: 
   return { found: Boolean(match), evidence: match, nearMisses };
 }
 
+const decodeMemo = (hex: string | null | undefined) => {
+  const h = (hex ?? "0x").slice(2);
+  if (h.length % 2) return null;
+  try {
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(h.match(/../g) ?? [], (b) => parseInt(b, 16)));
+    return /^[\x20-\x7e]*$/.test(text) ? text : null;
+  } catch {
+    return null;
+  }
+};
+
+// Base: EVM RPC cannot list transactions by sender, so the payee supplies the hash and every field is checked.
+async function findEvmProof(opts: { cluster: EvmCluster; address: string; expected: string; txHash?: string | null; notBefore: number; notAfter: number; signal?: AbortSignal }) {
+  const { cluster, address, expected, txHash, notBefore, notAfter, signal } = opts;
+  const none = { found: false, evidence: null as Evidence | null, nearMisses: [] as Evidence[] };
+  if (!isTxHash(txHash)) return none;
+  const chain = EVM_CHAINS[cluster];
+  type Tx = { from: string; to: string | null; input: string; chainId?: string };
+  type Receipt = { status: string; blockNumber: string };
+  const [tx, receipt] = await Promise.all([
+    rpc<Tx | null>(chain.rpc, "eth_getTransactionByHash", [txHash], signal),
+    rpc<Receipt | null>(chain.rpc, "eth_getTransactionReceipt", [txHash], signal),
+  ]);
+  if (!tx || !receipt) return none;
+  const block = await rpc<{ timestamp: string }>(chain.rpc, "eth_getBlockByNumber", [receipt.blockNumber, false], signal);
+  const blockTime = Number(block.timestamp);
+  const ev: Evidence = {
+    signature: txHash,
+    slot: Number(receipt.blockNumber),
+    blockTime,
+    blockTimeIso: new Date(blockTime * 1000).toISOString(),
+    memo: decodeMemo(tx.input),
+    signedByAddress: tx.from.toLowerCase() === address.toLowerCase(),
+    succeeded: receipt.status === "0x1",
+  };
+  const chainOk = tx.chainId == null || Number(tx.chainId) === chain.chainId;
+  const inWindow = blockTime >= notBefore - CLOCK_SKEW_S && blockTime <= notAfter;
+  return ev.memo === expected && ev.signedByAddress && ev.succeeded && chainOk && inWindow ? { found: true, evidence: ev, nearMisses: [] as Evidence[] } : { ...none, nearMisses: [ev] };
+}
+
 export interface VerifyInput {
   claimed: string;
   prior?: string | null;
@@ -159,12 +211,14 @@ export interface VerifyInput {
   expiresAt: number; // unix seconds
   cluster?: Cluster;
   known?: string[];
+  controlTx?: string | null;
+  rotationTx?: string | null;
   signal?: AbortSignal;
 }
 
 export async function verify(input: VerifyInput): Promise<Verdict> {
   const cluster = input.cluster ?? "devnet";
-  const rpcUrl = RPC[cluster];
+  const valid = (a: string) => (isEvmChain(cluster) ? isEvmAddress(a) : isSolanaAddress(a));
   const claimed = input.claimed.trim();
   const prior = input.prior?.trim() || null;
   const nonce = normalizeNonce(input.nonce);
@@ -172,22 +226,26 @@ export async function verify(input: VerifyInput): Promise<Verdict> {
   const base = { cluster, claimed, prior, nonce, checkedAt: new Date(now * 1000).toISOString() };
   const done = (verdict: VerdictName, extra: Partial<Verdict> = {}): Verdict => ({ ...base, verdict, payable: verdict === "VERIFIED_CONTINUITY", ...extra });
 
-  if (!isSolanaAddress(claimed)) return done("INVALID_ADDRESS", { reason: "claimed" });
-  if (prior && !isSolanaAddress(prior)) return done("INVALID_ADDRESS", { reason: "prior" });
+  if (!valid(claimed)) return done("INVALID_ADDRESS", { reason: "claimed" });
+  if (prior && !valid(prior)) return done("INVALID_ADDRESS", { reason: "prior" });
   if (!/^[0-9A-Z]{16}$/.test(nonce)) return done("INVALID_INPUT", { reason: "nonce" });
   if (!(input.expiresAt > input.issuedAt)) return done("INVALID_INPUT", { reason: "window" });
-  if (prior && prior === claimed) return done("UNCHANGED");
+  if (prior && sameAddress(prior, claimed)) return done("UNCHANGED");
   const collisions = lookalikes(claimed, [...new Set([...(input.known ?? []), ...(prior ? [prior] : [])])]);
   if (collisions.length) return done("LOOKALIKE", { collisions });
 
   const windowEnd = Math.min(now, input.expiresAt);
-  const control = await findMemoProof({ rpcUrl, address: claimed, expected: controlMemo(nonce), notBefore: input.issuedAt, notAfter: windowEnd, signal: input.signal });
-  let rotation: Awaited<ReturnType<typeof findMemoProof>> | null = null;
+  const find = (address: string, expected: string, txHash?: string | null) =>
+    isEvmChain(cluster)
+      ? findEvmProof({ cluster, address, expected, txHash: txHash?.trim(), notBefore: input.issuedAt, notAfter: windowEnd, signal: input.signal })
+      : findMemoProof({ rpcUrl: RPC[cluster], address, expected, notBefore: input.issuedAt, notAfter: windowEnd, signal: input.signal });
+  const control = await find(claimed, controlMemo(nonce), input.controlTx);
+  let rotation: Awaited<ReturnType<typeof find>> | null = null;
   const link = (e: Evidence | null) => (e ? { ...e, explorer: explorerTx(e.signature, cluster) } : null);
   if (prior) {
-    rotation = await findMemoProof({ rpcUrl, address: prior, expected: rotateMemo(nonce, claimed), notBefore: input.issuedAt, notAfter: windowEnd, signal: input.signal });
+    rotation = await find(prior, rotateMemo(nonce, claimed), input.rotationTx);
     const wrong = rotation.nearMisses.find(
-      (m) => m.signedByAddress && m.succeeded && m.memo?.startsWith(`countersig:${VERSION}:${nonce}:rotate:`) && m.memo !== rotateMemo(nonce, claimed),
+      (m) => m.signedByAddress && m.succeeded && m.memo?.startsWith(`countersig:${VERSION}:${nonce}:rotate:`) && !sameAddress(m.memo.split(":rotate:")[1] ?? "", claimed),
     );
     if (wrong) return done("MISMATCH", { evidence: { control: link(control.evidence), rotation: link(wrong) } });
   }
