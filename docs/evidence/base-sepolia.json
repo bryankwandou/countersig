@@ -1,0 +1,69 @@
+{
+  "suite": "countersig base-sepolia live",
+  "ranAt": "2026-09-15T12:03:33.645Z",
+  "passed": 5,
+  "total": 5,
+  "wallets": {
+    "prior": "0x5415C0F06B6af8c0B275509906F45C6a1Cfb66a6",
+    "payee": "0x7d7dd73AaeB1905Be83aD57a3b4001a3a95FF0C6",
+    "attacker": "0x1DB9c78dd8C30F3155D1F563F756E9a884180759"
+  },
+  "funding": [
+    "https://sepolia.basescan.org/tx/0x37e4e57fd674e2882241cf44a7d9ffd22f975f9ce1df19f28c3c11b632dd7263",
+    "https://sepolia.basescan.org/tx/0x1f7902f740525d0aa773eb811f716d64758027900367703c7e3d289652e734ed"
+  ],
+  "results": [
+    {
+      "name": "legitimate rotation on Base",
+      "expected": "VERIFIED_CONTINUITY",
+      "actual": "VERIFIED_CONTINUITY",
+      "pass": true,
+      "reason": null,
+      "txs": [
+        "https://sepolia.basescan.org/tx/0x1c3d51c83b78792c4c4c608a77c53758effa979bed47e0bd3aab9dcdcfe02b23",
+        "https://sepolia.basescan.org/tx/0xb48e00155bac8d0d405162e14f05a1669c3a54acb14ea1043a7280bad94c3e32"
+      ]
+    },
+    {
+      "name": "mailbox takeover: attacker signs, prior wallet never countersigns",
+      "expected": "PENDING",
+      "actual": "PENDING",
+      "pass": true,
+      "reason": "waiting for: rotation memo from the prior wallet (reply with its transaction hash)",
+      "txs": [
+        "https://sepolia.basescan.org/tx/0x0e42dbc6f306f9b7faecd667e22ac33ace728b985099d3b2d028624223320de1"
+      ]
+    },
+    {
+      "name": "attacker submits the prior wallet's hash for a different rotation",
+      "expected": "MISMATCH",
+      "actual": "MISMATCH",
+      "pass": true,
+      "reason": "the prior wallet endorsed a different address for this nonce",
+      "txs": [
+        "https://sepolia.basescan.org/tx/0x8b218f2ff39bac54faf6b93cc701eb1b72f3f166ab232cc4e885435b2dbb0735",
+        "https://sepolia.basescan.org/tx/0x0e35929c35976c8ce5afa52da040f24a714c0e65f3f9016b0f26cd66c910c739"
+      ]
+    },
+    {
+      "name": "hash from the wrong sender",
+      "expected": "PENDING",
+      "actual": "PENDING",
+      "pass": true,
+      "reason": "waiting for: control memo from the claimed wallet (reply with its transaction hash)",
+      "txs": [
+        "https://sepolia.basescan.org/tx/0xb3e055155768ca92a780b30a6bc707ee89da82d481c8162084496028ff5424f5"
+      ]
+    },
+    {
+      "name": "first contact on Base",
+      "expected": "VERIFIED_CHANNEL",
+      "actual": "VERIFIED_CHANNEL",
+      "pass": true,
+      "reason": "first contact: control proven, no prior wallet to countersign; hold payment until 2026-09-16T12:03:32.000Z; gate returns HOLD before then",
+      "txs": [
+        "https://sepolia.basescan.org/tx/0xc547a8a0872f527c0fba46c81befe4ec8aad82105b12d902ff31bf27c4a2c975"
+      ]
+    }
+  ]
+}

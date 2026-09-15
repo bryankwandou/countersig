@@ -17,3 +17,5 @@ jobs:
           node-version: 24
       - name: Re-read recorded attack scenarios on Solana devnet (no keys)
         run: node tests/live-devnet.mjs
+      - name: Re-read recorded Base Sepolia scenarios (no keys)
+        run: node tests/live-base.mjs
