@@ -514,7 +514,12 @@ export function gate({ verdict, amountUsd, paymentCluster, destination, history 
 
   // VERIFIED_CHANNEL: first contact, or continuity unavailable because the old key is lost
   const holds = [];
-  if (verdict.coolOffUntil && Date.parse(verdict.coolOffUntil) > now) holds.push(verdict.coolOffUntil);
+  // A call-back to a phone number the user already had is stronger than waiting, so it replaces the first-contact cool-off.
+  // It never replaces the lost-wallet hold below, which needs a second written channel and time.
+  if (verdict.coolOffUntil && Date.parse(verdict.coolOffUntil) > now) {
+    if (callbackConfirmed && !continuityUnavailable) reasons.push("call-back confirmed; first-contact cool-off waived");
+    else holds.push(verdict.coolOffUntil);
+  }
   if (continuityUnavailable) {
     if (!secondChannelAt || !Number.isFinite(Date.parse(secondChannelAt))) {
       reasons.push("old wallet unavailable: needs confirmation from a second, independently trusted channel");
