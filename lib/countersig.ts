@@ -137,7 +137,20 @@ interface ParsedTx {
 async function findMemoProof(opts: { rpcUrl: string; address: string; expected: string; notBefore: number; notAfter: number; signal?: AbortSignal }) {
   const { rpcUrl, address, expected, notBefore, notAfter, signal } = opts;
   const prefix = expected.split(":").slice(0, 3).join(":");
-  const sigs = await rpc<SigInfo[]>(rpcUrl, "getSignaturesForAddress", [address, { limit: 200, commitment: "confirmed" }], signal);
+  // Page back to the window start so a flood of unrelated transactions cannot hide a proof or a conflicting endorsement.
+  const sigs: SigInfo[] = [];
+  let before: string | undefined;
+  let scanComplete = false;
+  for (let page = 0; page < 10; page += 1) {
+    const batch = await rpc<SigInfo[]>(rpcUrl, "getSignaturesForAddress", [address, { limit: 1000, commitment: "confirmed", ...(before ? { before } : {}) }], signal);
+    sigs.push(...batch);
+    const oldest = batch.at(-1);
+    if (!oldest || batch.length < 1000 || (oldest.blockTime != null && oldest.blockTime < notBefore - CLOCK_SKEW_S)) {
+      scanComplete = true;
+      break;
+    }
+    before = oldest.signature;
+  }
   let match: Evidence | null = null;
   const nearMisses: Evidence[] = [];
   for (const entry of sigs) {
@@ -160,7 +173,7 @@ async function findMemoProof(opts: { rpcUrl: string; address: string; expected: 
     if (memos.includes(expected) && signer && ev.succeeded && !match) match = ev;
     else nearMisses.push(ev);
   }
-  return { found: Boolean(match), evidence: match, nearMisses };
+  return { found: Boolean(match), evidence: match, nearMisses, scanComplete };
 }
 
 const decodeMemo = (hex: string | null | undefined) => {
@@ -198,7 +211,8 @@ async function findEvmProof(opts: { cluster: EvmCluster; address: string; expect
     signedByAddress: tx.from.toLowerCase() === address.toLowerCase(),
     succeeded: receipt.status === "0x1",
   };
-  const chainOk = tx.chainId == null || Number(tx.chainId) === chain.chainId;
+  // Legacy transactions without a chain id can be replayed across chains.
+  const chainOk = tx.chainId != null && Number(tx.chainId) === chain.chainId;
   const inWindow = blockTime >= notBefore - CLOCK_SKEW_S && blockTime <= notAfter;
   return ev.memo === expected && ev.signedByAddress && ev.succeeded && chainOk && inWindow ? { found: true, evidence: ev, nearMisses: [] as Evidence[] } : { ...none, nearMisses: [ev] };
 }
@@ -250,6 +264,8 @@ export async function verify(input: VerifyInput): Promise<Verdict> {
     if (wrong) return done("MISMATCH", { evidence: { control: link(control.evidence), rotation: link(wrong) } });
   }
   const evidence = { control: link(control.evidence), rotation: link(rotation?.evidence ?? null) };
+  // A conflicting endorsement could sit beyond the pages we read; never call that verified.
+  if (prior && rotation && "scanComplete" in rotation && rotation.scanComplete === false) return done("PENDING", { evidence, missing: ["complete history of the prior wallet"] });
   if (control.found && prior && rotation?.found) return done("VERIFIED_CONTINUITY", { evidence });
   if (control.found && !prior) {
     return done("VERIFIED_CHANNEL", {

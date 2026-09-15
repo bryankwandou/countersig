@@ -7,6 +7,8 @@
 //   node countersig.mjs verify    --claimed <addr> --nonce <nonce> --issued-at <iso> --expires-at <iso> [--prior <addr>] [--known a,b] [--cluster devnet]
 //                                 [--control-tx <hash>] [--rotation-tx <hash>]   (Base only: EVM RPC cannot list txs by address)
 //   node countersig.mjs receipt   --verdict-file <verify.json> --challenge-file <challenge.json>
+//   node countersig.mjs gate      --verdict-file <verify.json> --amount-usd <n> [--payment-cluster <c>] [--destination <addr>] [--history-file <json>]
+//   node countersig.mjs receipt-check --text-file <receipt.txt> --origin draft|sent|inbound [--anchor-wallet <addr>]
 //   node countersig.mjs anchor    --receipt-file <receipt.json> --keypair <path> [--cluster devnet]
 //   node countersig.mjs sign      --keypair <path> --memo <text> [--cluster devnet]      (payee side, for testing)
 //   node countersig.mjs keygen    --out <path> [--cluster base-sepolia]                   (throwaway test key)
@@ -141,8 +143,23 @@ function memoTextsFromTransaction(tx) {
 }
 
 // Find a successful transaction, signed by `address`, inside the time window, whose memo equals `expected`.
-export async function findMemoProof({ rpcUrl, address, expected, notBefore, notAfter, scanLimit = 200 }) {
-  const signatures = await rpc(rpcUrl, "getSignaturesForAddress", [address, { limit: scanLimit, commitment: "confirmed" }]);
+// Anyone can reference a wallet in their own transactions, so an attacker can flood it to push a real proof
+// (or a conflicting endorsement) off the first page. Page back until the window start; if the page budget
+// runs out first, report scanComplete: false so verify fails closed.
+export async function findMemoProof({ rpcUrl, address, expected, notBefore, notAfter, scanLimit = 1000, maxPages = 10 }) {
+  const signatures = [];
+  let before;
+  let scanComplete = false;
+  for (let page = 0; page < maxPages; page += 1) {
+    const batch = await rpc(rpcUrl, "getSignaturesForAddress", [address, { limit: scanLimit, commitment: "confirmed", ...(before ? { before } : {}) }]);
+    signatures.push(...batch);
+    const oldest = batch.at(-1);
+    if (batch.length < scanLimit || (oldest?.blockTime != null && oldest.blockTime < notBefore - CLOCK_SKEW_S)) {
+      scanComplete = true;
+      break;
+    }
+    before = oldest.signature;
+  }
   const nearMisses = [];
   let match = null;
   // Scan the whole bounded window instead of stopping at the first match, so conflicting memos are seen too.
@@ -170,7 +187,7 @@ export async function findMemoProof({ rpcUrl, address, expected, notBefore, notA
     if (exact && signer && evidence.succeeded && !match) match = evidence;
     else nearMisses.push(evidence);
   }
-  return { found: Boolean(match), evidence: match, nearMisses, scanned: signatures.length };
+  return { found: Boolean(match), evidence: match, nearMisses, scanned: signatures.length, scanComplete };
 }
 
 export const explorer = (signature, cluster) =>
@@ -248,6 +265,10 @@ export async function verify(input) {
   };
   const trustLadder = { L1_control: control.found, L2_channel: "attested by the agent: nonce sent only to the pre-existing authenticated address", L3_continuity: prior ? Boolean(rotation?.found) : "not applicable (first contact)" };
 
+  if (prior && rotation.scanComplete === false) {
+    // A conflicting endorsement could sit beyond the pages we read; never call that verified.
+    return done("PENDING", { evidence, trustLadder, missing: ["complete history of the prior wallet"], reason: "the prior wallet has more transactions in the window than the scan budget; possible flooding, retry with a dedicated RPC" });
+  }
   if (control.found && prior && rotation.found) return done("VERIFIED_CONTINUITY", { evidence, trustLadder });
   if (control.found && !prior) {
     const coolOffUntil = new Date((control.evidence.blockTime + FIRST_CONTACT_COOL_OFF_H * 3600) * 1000).toISOString();
@@ -380,8 +401,55 @@ export function receipt(verdict, challengeRecord) {
     body.coolOffUntil ? `Cool-off until: ${body.coolOffUntil}` : null,
     `Checked: ${body.checkedAt}`,
     `sha256: ${sha256}`,
+    `Receipt data: ${Buffer.from(canonical(body)).toString("base64url")}`,
   ].filter(Boolean);
   return { receipt: body, sha256, subject: `[Countersig] ${body.verdict} ${body.counterparty ?? body.channel} ${body.claimed.slice(0, 4)}...${body.claimed.slice(-4)}`, text: lines.join("\n") };
+}
+
+// ---------- receipt check ----------
+// A subject line is not a receipt. Anyone can email "[Countersig] VERIFIED_CONTINUITY Acme <their wallet>",
+// and if that wallet became the "prior wallet" the attacker could countersign their own rotation.
+// Trust levels:
+//   anchored               sha256 recomputes and our own anchor wallet signed countersig:v1:receipt:<sha256>
+//   self_written_unanchored sha256 recomputes and the message is our own draft or sent mail; the user must confirm the wallet
+//   untrusted              anything else, including every inbound message
+export async function checkReceipt({ text, origin, anchorWallet, anchorCluster = "devnet", rpcUrl, now = Date.now() }) {
+  const reasons = [];
+  const out = (level, extra = {}) => ({ type: "countersig.receipt-check", version: VERSION, level, usableAsPriorWallet: level === "anchored" ? true : level === "self_written_unanchored" ? "only after the user confirms it" : false, reasons, ...extra });
+  const data = /^Receipt data: ([A-Za-z0-9_-]+)$/m.exec(text ?? "")?.[1];
+  const claimedSha = /^sha256: ([0-9a-f]{64})$/m.exec(text ?? "")?.[1];
+  if (!data || !claimedSha) return (reasons.push("no receipt data or sha256 line"), out("untrusted"));
+  let body;
+  try {
+    body = JSON.parse(Buffer.from(data, "base64url").toString("utf8"));
+  } catch {
+    return (reasons.push("receipt data is not valid JSON"), out("untrusted"));
+  }
+  const sha256 = createHash("sha256").update(canonical(body)).digest("hex");
+  if (sha256 !== claimedSha) return (reasons.push("sha256 does not match the receipt data"), out("untrusted"));
+  if (body.type !== "countersig.receipt" || !String(body.verdict).startsWith("VERIFIED")) {
+    return (reasons.push(`receipt verdict ${body.verdict} cannot establish a prior wallet`), out("untrusted", { sha256 }));
+  }
+  const facts = { sha256, wallet: body.claimed, cluster: body.cluster, counterparty: body.counterparty, verdict: body.verdict, checkedAt: body.checkedAt };
+
+  if (anchorWallet) {
+    const checkedS = Math.floor(Date.parse(body.checkedAt) / 1000);
+    const nowS = Math.floor(now / 1000);
+    const proof = isEvmChain(anchorCluster)
+      ? { found: false }
+      : await findMemoProof({ rpcUrl: rpcUrl ?? RPC[anchorCluster], address: anchorWallet, expected: receiptMemo(sha256), notBefore: checkedS, notAfter: nowS });
+    if (proof.found) {
+      reasons.push(`anchor memo signed by ${anchorWallet}`);
+      return out("anchored", { ...facts, anchor: withLink(proof.evidence, anchorCluster) });
+    }
+    reasons.push("no anchor memo from the configured anchor wallet");
+  }
+  if (origin === "draft" || origin === "sent") {
+    reasons.push(`found in our own ${origin} mail`);
+    return out("self_written_unanchored", facts);
+  }
+  reasons.push(origin === "inbound" ? "inbound mail can never supply a prior wallet" : "origin unknown; pass --origin draft|sent|inbound");
+  return out("untrusted", facts);
 }
 
 // ---------- payout gate ----------
@@ -579,6 +647,12 @@ async function main() {
       if (args.out) await writeFile(args.out, `${JSON.stringify(result, null, 2)}\n`);
       return out(result);
     }
+    case "receipt-check": {
+      need(args, "textFile");
+      const result = await checkReceipt({ text: await readFile(args.textFile, "utf8"), origin: args.origin, anchorWallet: args.anchorWallet, anchorCluster: cluster, rpcUrl: args.rpc });
+      if (args.out) await writeFile(args.out, `${JSON.stringify(result, null, 2)}\n`);
+      return out(result, { anchored: 0, self_written_unanchored: 2, untrusted: 3 }[result.level]);
+    }
     case "gate": {
       need(args, "verdictFile", "amountUsd");
       const result = gate({
@@ -625,7 +699,7 @@ async function main() {
       return out({ type: "countersig.keygen", address: b58encode(pub), path: args.out, note: "throwaway key for devnet testing only" });
     }
     default:
-      throw new Error("usage: countersig.mjs <challenge|verify|gate|receipt|anchor|sign|keygen> [--flags]");
+      throw new Error("usage: countersig.mjs <challenge|verify|gate|receipt|receipt-check|anchor|sign|keygen> [--flags]");
   }
 }
 
