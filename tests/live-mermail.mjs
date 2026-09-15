@@ -3,7 +3,9 @@
 // Run locally: MERMAIL_API_KEY=... node tests/live-mermail.mjs
 import { challenge, checkReceipt, receipt, verify } from "../skill/scripts/countersig.mjs";
 
-const KEY = process.env.MERMAIL_API_KEY?.trim();
+const RAW = process.env.MERMAIL_API_KEY ?? "";
+// The secret may be a whole key file; use the key token if one is present.
+const KEY = (RAW.match(/sk-proj-[A-Za-z0-9_-]+/)?.[0] ?? RAW.replace(/^﻿/, "")).trim();
 if (!KEY) {
   console.log("MERMAIL_API_KEY not set; skipping live Mermail run");
   process.exit(0);
