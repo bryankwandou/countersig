@@ -280,7 +280,7 @@ export async function verify(input) {
       trustLadder,
       coolOffUntil,
       payableAfterCoolOff: true,
-      reason: `first contact: control proven, no prior wallet to countersign; hold payment until ${coolOffUntil} unless the user overrides`,
+      reason: `first contact: control proven, no prior wallet to countersign; hold payment until ${coolOffUntil}; gate returns HOLD before then`,
     });
   }
   if (now > expiresAt) return done("EXPIRED", { evidence, trustLadder, reason: "challenge window closed before every required proof landed" });
