@@ -59,7 +59,7 @@ These attacks were found by trying to break Countersig, then fixed. The previous
 ## Verify it yourself
 
 ```bash
-npm ci
+npm install
 npm test
 npm run build
 ```
