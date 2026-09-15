@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - name: Skill script matches the Mermail PR branch
         run: |
           base=https://raw.githubusercontent.com/bryankwandou/mermail-skills/feat/mermail-countersig/skills/mermail-countersig/scripts
