@@ -19,7 +19,7 @@ Countersig is a Mermail Agent Skill that stops payout-address fraud before an AI
 | `app/` | Landing page, `/sign` (payee signs the memo in Phantom, Solflare or Backpack), `/verify` (anyone re-checks a proof), `/proof` (real Mermail tool log and devnet transactions) |
 | `lib/countersig.ts` | Browser port of the skill's verify rules for Solana and Base |
 | `skill/scripts/` | Exact copy of the skill script from the PR branch. CI fails if it drifts |
-| `tests/gate-check.mjs` | 21 offline cases for the payout gate |
+| `tests/gate-check.mjs` | 23 offline cases for the payout gate |
 | `tests/live-mermail.mjs` | Weekly and on demand: hosted Mermail MCP round-trip with a self-addressed challenge, a receipt draft, `search_emails` read-back and `receipt-check`. Needs the `MERMAIL_API_KEY` repository secret |
 | `tests/live-base.mjs` | Re-reads five recorded Base Sepolia scenarios every day from `docs/evidence/base-sepolia.json` (rotation, takeover, conflicting rotation, wrong sender, first contact). No keys |
 | `tests/live-devnet.mjs` | Re-reads five recorded scenarios on live Solana devnet every day (rotation, mailbox takeover, swapped endorsement, poisoning, first contact). No keys |
