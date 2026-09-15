@@ -29,3 +29,17 @@ jobs:
         run: npm run lint
       - name: Build
         run: npm run build
+
+  upstream-validator:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the exact branch submitted in Nudgen-Marketing/mermail-skills#268
+        run: git clone --depth 1 -b feat/mermail-countersig https://github.com/bryankwandou/mermail-skills.git pr
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Official validator plus Countersig checks (npm test)
+        working-directory: pr
+        run: |
+          npm install --no-audit --no-fund
+          npm test
